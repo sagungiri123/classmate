@@ -16,6 +16,7 @@ Follow these rules:
 - If asked to solve homework directly, guide them step by step instead of just giving the answer
 - Format your responses using markdown where it helps clarity (bullet points, code blocks, bold text)`;
 
+
 // POST /api/chat  — send a message and get AI reply
 const sendMessage = async (req, res) => {
   const { chatId, message } = req.body;

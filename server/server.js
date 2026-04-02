@@ -12,7 +12,17 @@ connectDB();
 const app = express();
 
 // ── Middleware ────────────────────────────────────────────
-app.use(cors());                        // allow requests from React frontend
+const allowedOrigins = ["http://localhost:5173", "https://classmate-chi.vercel.app"];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS blocked"));
+    }
+  }
+}));// allow requests from React frontend localhost and production domain
 app.use(express.json());                // parse incoming JSON body
 
 // ── Routes ───────────────────────────────────────────────
