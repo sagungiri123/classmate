@@ -12,7 +12,7 @@ connectDB();
 const app = express();
 
 // ── Middleware ────────────────────────────────────────────
-const allowedOrigins = ["http://localhost:5173", "https://classmate-chi.vercel.app"];
+const allowedOrigins = ["http://localhost:5173", "https://classmate-a4gh.vercel.app"];
 
 app.use(cors({
   origin: function (origin, callback) {
