@@ -2,18 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ReactMarkdown from "react-markdown";
-
-// --- Mock Data for Demo ---
-const MOCK_CHATS = [
-  { _id: "1", title: "Calculus Help", updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString() },
-  { _id: "2", title: "Essay on Climate Change", updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
-  { _id: "3", title: "Python Recursion Question", updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString() },
-];
-
-const MOCK_MESSAGES = [
-  { role: "user", content: "Can you explain how to solve quadratic equations?" },
-  { role: "assistant", content: "Absolutely! A **quadratic equation** is any equation that can be rearranged in standard form as:\n\n```\nax² + bx + c = 0\n```\n\nWhere **a**, **b**, and **c** are constants, and **a ≠ 0**.\n\n## The Quadratic Formula\n\nThe most reliable method is using the quadratic formula:\n\n> x = (-b ± √(b² - 4ac)) / 2a\n\nThe expression **b² - 4ac** is called the **discriminant**. It tells you:\n- If positive → 2 real solutions\n- If zero → 1 real solution\n- If negative → 2 complex solutions\n\nWould you like me to walk through a specific example?" },
-];
+import { sendMessage as apiSendMessage, getAllChats, getChatById, deleteChat } from "../interceptor/chat";
 
 // --- Helper Functions ---
 const formatDate = (isoString) => {
@@ -562,11 +551,28 @@ const ChatPage = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   
-  // Use mock data for demo, but structure matches real implementation
-  const [chats, setChats] = useState(MOCK_CHATS);
+  const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
-  const [messages, setMessages] = useState(MOCK_MESSAGES);
+  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [listLoading, setListLoading] = useState(false);
+
+  // Load chats on mount
+  useEffect(() => {
+    loadChats();
+  }, []);
+
+  const loadChats = async () => {
+    setListLoading(true);
+    try {
+      const res = await getAllChats();
+      setChats(res.data);
+    } catch (err) {
+      console.error("Failed to load chats:", err);
+    } finally {
+      setListLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -578,14 +584,24 @@ const ChatPage = () => {
     setMessages([]);
   };
 
-  const openChat = (id) => {
+  const openChat = async (id) => {
     setActiveChatId(id);
-    setMessages(MOCK_MESSAGES);
+    try {
+      const res = await getChatById(id);
+      setMessages(res.data.messages);
+    } catch (err) {
+      console.error("Failed to load chat:", err);
+    }
   };
 
-  const removeChat = (id) => {
-    setChats((prev) => prev.filter((c) => c._id !== id));
-    if (activeChatId === id) startNewChat();
+  const removeChat = async (id) => {
+    try {
+      await deleteChat(id);
+      setChats((prev) => prev.filter((c) => c._id !== id));
+      if (activeChatId === id) startNewChat();
+    } catch (err) {
+      console.error("Failed to delete chat:", err);
+    }
   };
 
   const sendMessage = async (text) => {
@@ -595,14 +611,27 @@ const ChatPage = () => {
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
-    setTimeout(() => {
-      const aiMsg = { 
-        role: "assistant", 
-        content: "That is a great question! Let me break this down for you step by step.\n\n**Key points to consider:**\n- First, make sure you understand the fundamentals\n- Practice with concrete examples\n- Do not hesitate to ask follow-up questions\n\nWould you like me to explain any specific part in more detail?" 
-      };
+    try {
+      const res = await apiSendMessage({ chatId: activeChatId, message: text });
+      const { chatId, reply } = res.data;
+
+      // If this was a new chat, set the returned id and refresh sidebar
+      if (!activeChatId) {
+        setActiveChatId(chatId);
+        await loadChats();
+      }
+
+      const aiMsg = { role: "assistant", content: reply };
       setMessages((prev) => [...prev, aiMsg]);
+    } catch (err) {
+      const errMsg = {
+        role: "assistant",
+        content: "Sorry, something went wrong. Please try again.",
+      };
+      setMessages((prev) => [...prev, errMsg]);
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   const handleSuggestion = (suggestion) => {
