@@ -5,6 +5,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ChatPage from './pages/ChatPage';
 import NotFoundPage from './pages/NotFoundPage';
+import MicButton from './components/chat/MicButton';
+import {useState} from 'react';
 
 import './App.css';
 

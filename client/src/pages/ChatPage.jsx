@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import ReactMarkdown from "react-markdown";
 import { sendMessage as apiSendMessage, getAllChats, getChatById, deleteChat } from "../interceptor/chat";
+import MicButton from "../components/chat/MicButton";
 
 // --- Helper Functions ---
 const formatDate = (isoString) => {
@@ -451,6 +452,11 @@ const ChatInput = ({ onSend, disabled }) => {
   const [text, setText] = useState("");
   const textareaRef = useRef(null);
 
+  const handleTranscript = (transcript) => {
+    setText(transcript);
+    textareaRef.current?.focus();
+  };
+
   useEffect(() => {
     const handler = (e) => {
       setText(e.detail);
@@ -500,7 +506,7 @@ const ChatInput = ({ onSend, disabled }) => {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your question here..."
+            placeholder="Type or speak your question..."
             disabled={disabled}
             className="flex-1 bg-transparent text-sm outline-none resize-none max-h-32 disabled:opacity-50"
             style={{ 
@@ -509,6 +515,9 @@ const ChatInput = ({ onSend, disabled }) => {
               fontFamily: "'Nunito', system-ui, sans-serif"
             }}
           />
+
+          {/* Mic Button */}
+          <MicButton onTranscript={handleTranscript} />
 
           {/* Send Button */}
           <button
@@ -538,7 +547,7 @@ const ChatInput = ({ onSend, disabled }) => {
         </div>
 
         <p className="text-center text-xs mt-3" style={{ color: "#8A8580" }}>
-          Press Enter to send, Shift+Enter for a new line
+          Press Enter to send, Shift+Enter for a new line, or click the microphone to speak
         </p>
       </div>
     </div>
